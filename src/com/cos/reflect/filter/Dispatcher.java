@@ -1,17 +1,22 @@
 package com.cos.reflect.filter;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.cos.reflect.anno.RequestMapping;
 import com.cos.reflect.controller.UserController;
 
+// 분기시키기
 public class Dispatcher implements Filter{
 
 	@Override
@@ -30,15 +35,45 @@ public class Dispatcher implements Filter{
 		System.out.println("엔드포인트 : " + endPoint);
 		
 		UserController userController = new UserController();
-		if (endPoint.equals("/join")) {
-			userController.join();
-		} else if (endPoint.equals("/login")) {
-			userController.login();
-		} else if (endPoint.equals("/user")) {
-			userController.user();
+//		if (endPoint.equals("/join")) {
+//			userController.join();
+//		} else if (endPoint.equals("/login")) {
+//			userController.login();
+//		} else if (endPoint.equals("/user")) {
+//			userController.user();
+//		}
+		
+		// 리플렉션 : 메소드를 런타임 시점에서 찾아내서 실행
+		Method[] methods = userController.getClass().getDeclaredMethods(); // 그 파일의 메소드만!!
+		
+//		for (Method method : methods) {
+//			System.out.println(method.getName());
+//			if (endPoint.equals("/" + method.getName())) {
+//				try {
+//					method.invoke(userController);
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//				}
+//			}
+//		}
+		
+		for (Method method : methods) { // 4바퀴 (join, login, user, hello)
+			Annotation annotation = method.getDeclaredAnnotation(RequestMapping.class);
+			RequestMapping requestMapping = (RequestMapping) annotation;
+			System.out.println(requestMapping.value());
+			
+			if (requestMapping.value().equals(endPoint)) {
+				String path;
+				try {
+					path = (String) method.invoke(userController);
+					RequestDispatcher dis = request.getRequestDispatcher(path);
+					dis.forward(request, response);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				break;
+			}
 		}
 	}
-	
-	
 
 }
