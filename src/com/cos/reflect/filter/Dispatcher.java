@@ -3,6 +3,8 @@ package com.cos.reflect.filter;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.Enumeration;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -60,13 +62,33 @@ public class Dispatcher implements Filter{
 		for (Method method : methods) { // 4바퀴 (join, login, user, hello)
 			Annotation annotation = method.getDeclaredAnnotation(RequestMapping.class);
 			RequestMapping requestMapping = (RequestMapping) annotation;
-			System.out.println(requestMapping.value());
+//			System.out.println(requestMapping.value());
 			
-			if (requestMapping.value().equals(endPoint)) {
-				String path;
+			if(requestMapping.value().equals(endPoint)) {
+				System.out.println("1");
 				try {
-					path = (String) method.invoke(userController);
-					RequestDispatcher dis = request.getRequestDispatcher(path);
+					Parameter[] params = method.getParameters();
+					String path = null;
+					if(params.length != 0) {
+						// System.out.println("params[0].getType() : "+params[0].getType());
+						Object dtoInstance = params[0].getType().newInstance();
+						// /user/login => LoginDto, /user/join => JoinDto
+//						String username = request.getParameter("username");
+//						String password = request.getParameter("password");
+//						System.out.println("username : "+username);
+//						System.out.println("password : "+password);
+						Enumeration<String> keys =   request.getParameterNames(); // username, password
+						// keys 값을 변형 username => setUsername
+						// keys 값을 변형 password => setPassword
+						while(keys.hasMoreElements()) {
+							System.out.println(keys.nextElement());
+						}
+						path = "/";
+					}else {
+						path = (String)method.invoke(userController);
+					}
+						
+					RequestDispatcher dis = request.getRequestDispatcher(path); // 필터를 다시 안탐!!
 					dis.forward(request, response);
 				} catch (Exception e) {
 					e.printStackTrace();
